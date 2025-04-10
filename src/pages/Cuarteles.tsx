@@ -1,7 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
 import Grid from "@/components/Grid/Grid";
-import { Building2, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import {
+  Building2,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Plus,
+} from "lucide-react";
 import { Column } from "@/contexts/GridContext";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import DynamicForm, {
+  SectionConfig,
+} from "@/components/DynamicForm/DynamicForm";
+import { z } from "zod";
 
 // Mock data for cuarteles
 const cuartelesData = [
@@ -247,12 +266,89 @@ const expandableContent = (row: any) => (
   </div>
 );
 
+// Form configuration for adding new cuartel
+const formSections: SectionConfig[] = [
+  {
+    id: "cuartel-info",
+    title: "Información del Cuartel",
+    description: "Ingrese los datos del nuevo cuartel",
+    fields: [
+      {
+        id: "barracks",
+        type: "text",
+        label: "Barracks",
+        name: "barracks",
+        placeholder: "Nombre del cuartel",
+        required: true,
+      },
+      {
+        id: "species",
+        type: "text",
+        label: "Species",
+        name: "species",
+        placeholder: "Especie",
+        required: true,
+      },
+      {
+        id: "variety",
+        type: "text",
+        label: "Variety",
+        name: "variety",
+        placeholder: "Variedad",
+        required: true,
+      },
+      {
+        id: "phenologicalState",
+        type: "text",
+        label: "Phenological State",
+        name: "phenologicalState",
+        placeholder: "Estado fenológico",
+        required: true,
+      },
+      {
+        id: "state",
+        type: "checkbox",
+        label: "State",
+        name: "state",
+        required: true,
+      },
+    ],
+  },
+];
+
+// Form validation schema
+const formValidationSchema = z.object({
+  barracks: z.string().min(1, { message: "Barracks is required" }),
+  species: z.string().min(1, { message: "Species is required" }),
+  variety: z.string().min(1, { message: "Variety is required" }),
+  phenologicalState: z
+    .string()
+    .min(1, { message: "Phenological State is required" }),
+  state: z.boolean(),
+});
+
 const Cuarteles = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleAddCuartel = (data: any) => {
+    console.log("New cuartel data:", data);
+    // Here you would typically save the data to your backend
+    // For now, we'll just close the dialog
+    setIsDialogOpen(false);
+    // You could also update the local data state to show the new record
+    alert("Nuevo cuartel agregado (check console for details)");
+  };
+
   return (
     <div className="p-6 bg-background">
-      <div className="flex items-center mb-6">
-        <Building2 className="h-6 w-6 mr-2" />
-        <h1 className="text-2xl font-bold">Cuarteles</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Building2 className="h-6 w-6 mr-2" />
+          <h1 className="text-2xl font-bold">Cuarteles</h1>
+        </div>
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" /> Agregar Cuartel
+        </Button>
       </div>
       <Grid
         data={cuartelesData}
@@ -260,6 +356,25 @@ const Cuarteles = () => {
         title="Listado de Cuarteles"
         expandableContent={expandableContent}
       />
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Agregar Nuevo Cuartel</DialogTitle>
+            <DialogDescription>
+              Complete el formulario para agregar un nuevo cuartel al sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <DynamicForm
+            sections={formSections}
+            onSubmit={handleAddCuartel}
+            validationSchema={formValidationSchema}
+            defaultValues={{
+              state: false,
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
