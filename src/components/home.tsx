@@ -110,24 +110,7 @@ interface ContentAreaProps {
 
 const ContentArea = ({ sidebarCollapsed }: ContentAreaProps) => {
   return (
-    <div className="flex-1 overflow-auto bg-muted/20">
-      <header className="sticky top-0 z-10 bg-background border-b">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold">Dashboard</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
-            </Button>
-            <Avatar>
-              <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=user123" />
-              <AvatarFallback>US</AvatarFallback>
-            </Avatar>
-          </div>
-        </div>
-      </header>
-
+    <div className="w-full h-full overflow-auto">
       <main className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card>
@@ -234,15 +217,9 @@ const ContentArea = ({ sidebarCollapsed }: ContentAreaProps) => {
 };
 
 const HomePage = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
-      />
-      <ContentArea sidebarCollapsed={sidebarCollapsed} />
+    <div className="w-full h-full">
+      <ContentArea sidebarCollapsed={false} />
     </div>
   );
 };

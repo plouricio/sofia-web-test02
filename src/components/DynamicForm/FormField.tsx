@@ -431,7 +431,7 @@ const FormField: React.FC<FormFieldProps> = ({ field }) => {
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0">
-                    <Command>
+                    <Command shouldFilter={false}>
                       <CommandInput
                         placeholder={`Search ${field.label.toLowerCase()}...`}
                         className="h-9"
@@ -443,7 +443,7 @@ const FormField: React.FC<FormFieldProps> = ({ field }) => {
                         {field.options?.map((option) => (
                           <CommandItem
                             key={option.value}
-                            value={option.value}
+                            value={option.value || ""}
                             onSelect={() => {
                               formField.onChange(option.value);
                             }}
