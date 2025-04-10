@@ -52,6 +52,16 @@ const Sidebar = ({ collapsed = false, onToggle = () => {} }: SidebarProps) => {
     { icon: <BarChart3 size={20} />, label: "Analytics", path: "/analytics" },
     { icon: <Users size={20} />, label: "Users", path: "/users" },
     { icon: <Building2 size={20} />, label: "Cuarteles", path: "/cuarteles" },
+    {
+      icon: <FileText size={20} />,
+      label: "Dynamic Form",
+      path: "/dynamic-form",
+    },
+    {
+      icon: <FileText size={20} />,
+      label: "Form Builder",
+      path: "/form-builder",
+    },
     { icon: <FileText size={20} />, label: "Reports", path: "/reports" },
     { icon: <Settings size={20} />, label: "Settings", path: "/settings" },
   ];
