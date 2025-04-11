@@ -39,7 +39,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import Grid from "@/components/Grid/Grid";
-import SelectableGrid from "@/components/Grid/SelectableGrid";
 import Captcha from "./Captcha";
 
 interface FormFieldProps {
@@ -401,52 +400,6 @@ const FormField: React.FC<FormFieldProps> = ({ field }) => {
                 <FormDescription>{field.helperText}</FormDescription>
               )}
             </div>
-          );
-        }
-        return null;
-
-      case "selectableGrid":
-        if (field.selectableGridConfig) {
-          return (
-            <HookFormField
-              control={control}
-              name={field.name}
-              render={({ field: formField }) => (
-                <FormItem className="col-span-2">
-                  <FormLabel>{field.label}</FormLabel>
-                  <FormControl>
-                    <div className="mt-2">
-                      <SelectableGrid
-                        data={field.selectableGridConfig.data || []}
-                        columns={field.selectableGridConfig.columns || []}
-                        title={field.selectableGridConfig.title || field.label}
-                        expandableContent={
-                          field.selectableGridConfig.expandableContent
-                        }
-                        onSelectionChange={(selectedRows) => {
-                          // Update form value with selected rows or just their IDs based on configuration
-                          const idField =
-                            field.selectableGridConfig.idField || "id";
-                          if (field.selectableGridConfig.storeFullObjects) {
-                            formField.onChange(selectedRows);
-                          } else {
-                            const selectedIds = selectedRows.map(
-                              (row) => row[idField],
-                            );
-                            formField.onChange(selectedIds);
-                          }
-                        }}
-                        selectedRowIds={formField.value || []}
-                      />
-                    </div>
-                  </FormControl>
-                  {field.helperText && (
-                    <FormDescription>{field.helperText}</FormDescription>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           );
         }
         return null;

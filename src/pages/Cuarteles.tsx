@@ -314,102 +314,6 @@ const formSections: SectionConfig[] = [
       },
     ],
   },
-  {
-    id: "cuartel-vehiculos",
-    title: "Vehículos Asignados",
-    description: "Seleccione los vehículos que serán asignados a este cuartel",
-    fields: [
-      {
-        id: "vehiculos-asignados",
-        type: "selectableGrid",
-        label: "Vehículos Disponibles",
-        name: "vehiculosAsignados",
-        required: false,
-        selectableGridConfig: {
-          data: [
-            {
-              id: 1,
-              tipo: "Camión",
-              placa: "ABC-123",
-              capacidad: "5 ton",
-              estado: "Disponible",
-            },
-            {
-              id: 2,
-              tipo: "Ambulancia",
-              placa: "XYZ-789",
-              capacidad: "4 personas",
-              estado: "Disponible",
-            },
-            {
-              id: 3,
-              tipo: "Jeep",
-              placa: "DEF-456",
-              capacidad: "6 personas",
-              estado: "Disponible",
-            },
-            {
-              id: 4,
-              tipo: "Motocicleta",
-              placa: "GHI-789",
-              capacidad: "2 personas",
-              estado: "En mantenimiento",
-            },
-            {
-              id: 5,
-              tipo: "Camioneta",
-              placa: "JKL-012",
-              capacidad: "8 personas",
-              estado: "Disponible",
-            },
-          ],
-          columns: [
-            {
-              id: "id",
-              header: "ID",
-              accessor: "id",
-              visible: true,
-              sortable: true,
-            },
-            {
-              id: "tipo",
-              header: "Tipo",
-              accessor: "tipo",
-              visible: true,
-              sortable: true,
-              groupable: true,
-            },
-            {
-              id: "placa",
-              header: "Placa",
-              accessor: "placa",
-              visible: true,
-              sortable: true,
-            },
-            {
-              id: "capacidad",
-              header: "Capacidad",
-              accessor: "capacidad",
-              visible: true,
-              sortable: true,
-            },
-            {
-              id: "estado",
-              header: "Estado",
-              accessor: "estado",
-              visible: true,
-              sortable: true,
-              groupable: true,
-            },
-          ],
-          title: "Vehículos Disponibles",
-          idField: "id",
-          storeFullObjects: true,
-        },
-        helperText: "Seleccione los vehículos que desea asignar a este cuartel",
-      },
-    ],
-  },
 ];
 
 // Form validation schema
@@ -421,7 +325,6 @@ const formValidationSchema = z.object({
     .string()
     .min(1, { message: "Phenological State is required" }),
   state: z.boolean(),
-  vehiculosAsignados: z.array(z.any()).optional(),
 });
 
 const Cuarteles = () => {
@@ -429,25 +332,11 @@ const Cuarteles = () => {
 
   const handleAddCuartel = (data: any) => {
     console.log("New cuartel data:", data);
-
-    // Extract the selected vehicles from the form data
-    const selectedVehicles = data.vehiculosAsignados || [];
-    console.log("Selected vehicles:", selectedVehicles);
-
-    // Create a formatted message for the alert
-    const vehiclesMessage =
-      selectedVehicles.length > 0
-        ? `Vehículos asignados: ${selectedVehicles.map((v: any) => v.tipo + " " + v.placa).join(", ")}`
-        : "No se asignaron vehículos";
-
     // Here you would typically save the data to your backend
     // For now, we'll just close the dialog
     setIsDialogOpen(false);
-
     // You could also update the local data state to show the new record
-    alert(
-      `Nuevo cuartel "${data.barracks}" agregado\n${vehiclesMessage}\n(check console for details)`,
-    );
+    alert("Nuevo cuartel agregado (check console for details)");
   };
 
   return (

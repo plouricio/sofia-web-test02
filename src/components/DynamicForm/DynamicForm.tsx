@@ -24,8 +24,7 @@ export type FieldType =
   | "url"
   | "search"
   | "autocomplete"
-  | "grid"
-  | "selectableGrid";
+  | "grid";
 
 export interface FieldOption {
   label: string;
@@ -54,7 +53,6 @@ export interface FieldConfig {
   defaultValue?: any;
   helperText?: string;
   gridConfig?: any; // Configuration for nested grid
-  selectableGridConfig?: any; // Configuration for selectable grid
 }
 
 export interface SectionConfig {

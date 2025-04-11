@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -12,7 +12,6 @@ import { Column, GridProvider, useGridContext } from "@/contexts/GridContext";
 import ColumnConfiguration from "./ColumnConfiguration";
 import ExportMenu from "./ExportMenu";
 import GroupingMenu from "./GroupingMenu";
-import { useGridData } from "@/hooks/useGridData";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,21 +36,93 @@ const GridComponent: React.FC<GridProps> = ({
   onRowClick,
   expandableContent,
 }) => {
-  const { columns, setGroupState, setSearchTerm, toggleColumnVisibility } =
-    useGridContext();
-
-  // Use the new useGridData hook
   const {
-    filteredData,
-    sortedData,
-    groupedData,
+    columns,
     sortState,
     groupState,
     searchTerm,
-    handleSort,
+    setSortState,
+    setGroupState,
+    setSearchTerm,
     toggleRowExpanded,
     isRowExpanded,
-  } = useGridData({ data, columns });
+  } = useGridContext();
+
+  // Filtrar datos basados en el término de búsqueda
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+
+    return data.filter((row) => {
+      return columns.some((column) => {
+        if (!column.visible) return false;
+        const value = row[column.accessor];
+        if (value == null) return false;
+        return String(value).toLowerCase().includes(searchTerm.toLowerCase());
+      });
+    });
+  }, [data, columns, searchTerm]);
+
+  // Ordenar datos
+  const sortedData = useMemo(() => {
+    if (!sortState.column || !sortState.direction) return filteredData;
+
+    return [...filteredData].sort((a, b) => {
+      const valueA = a[sortState.column as string];
+      const valueB = b[sortState.column as string];
+
+      if (valueA === valueB) return 0;
+
+      const direction = sortState.direction === "asc" ? 1 : -1;
+
+      if (valueA == null) return 1 * direction;
+      if (valueB == null) return -1 * direction;
+
+      if (typeof valueA === "string" && typeof valueB === "string") {
+        return valueA.localeCompare(valueB) * direction;
+      }
+
+      return (valueA > valueB ? 1 : -1) * direction;
+    });
+  }, [filteredData, sortState]);
+
+  // Agrupar datos
+  const groupedData = useMemo(() => {
+    if (!groupState.column) return sortedData;
+
+    const groups: Record<string, any[]> = {};
+
+    sortedData.forEach((row) => {
+      const groupValue = row[groupState.column as string];
+      const groupKey = groupValue != null ? String(groupValue) : "Undefined";
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+
+      groups[groupKey].push(row);
+    });
+
+    return groups;
+  }, [sortedData, groupState]);
+
+  // Manejar clic en encabezado de columna para ordenar
+  const handleSort = (columnId: string) => {
+    setSortState((prev) => {
+      if (prev.column === columnId) {
+        // Ciclo: asc -> desc -> null
+        if (prev.direction === "asc") {
+          return { column: columnId, direction: "desc" };
+        } else if (prev.direction === "desc") {
+          return { column: null, direction: null };
+        } else {
+          return { column: columnId, direction: "asc" };
+        }
+      } else {
+        // Nueva columna, comenzar con asc
+        return { column: columnId, direction: "asc" };
+      }
+    });
+  };
 
   // Renderizar encabezados de columna
   const renderHeaders = () => {
