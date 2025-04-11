@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,20 +12,33 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Column, useGridContext } from "@/contexts/GridContext";
+import { Column, useGrid } from "@/lib/store/gridStore";
 
 interface ColumnConfigurationProps {
   columns: Column[];
+  gridId: string; // Added to identify which grid to modify
 }
 
 const ColumnConfiguration: React.FC<ColumnConfigurationProps> = ({
   columns,
+  gridId,
 }) => {
   const {
+    grid,
     toggleColumnVisibility,
-    saveColumnConfiguration,
     resetColumnConfiguration,
-  } = useGridContext();
+  } = useGrid(gridId);
+
+  // Use the columns from the grid if available, otherwise use the provided ones
+  const configuredColumns = useMemo(() => {
+    return grid?.columns || columns;
+  }, [grid, columns]);
+
+  // Save column configuration by persisting the columns
+  // The store will automatically persist changes to localStorage
+  const saveColumnConfiguration = () => {
+    // Nothing needed here as Zustand persist middleware will handle storage
+  };
 
   return (
     <Dialog>
@@ -40,7 +53,7 @@ const ColumnConfiguration: React.FC<ColumnConfigurationProps> = ({
         </DialogHeader>
         <div className="py-4 max-h-[60vh] overflow-y-auto">
           <div className="space-y-4">
-            {columns.map((column) => (
+            {configuredColumns.map((column) => (
               <div key={column.id} className="flex items-center space-x-2">
                 <Checkbox
                   id={`column-${column.id}`}
@@ -61,7 +74,7 @@ const ColumnConfiguration: React.FC<ColumnConfigurationProps> = ({
           <Button
             type="button"
             variant="outline"
-            onClick={resetColumnConfiguration}
+            onClick={() => resetColumnConfiguration(columns)}
           >
             Reset to Default
           </Button>

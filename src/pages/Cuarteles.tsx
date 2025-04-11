@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Grid from "@/components/Grid/Grid";
+import { Grid } from "@/components/Grid/Grid";
 import {
   Building2,
   CheckCircle,
@@ -7,7 +7,7 @@ import {
   AlertTriangle,
   Plus,
 } from "lucide-react";
-import { Column } from "@/contexts/GridContext";
+import { Column } from "@/lib/store/gridStore";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -120,6 +120,69 @@ const cuartelesData = [
     fechaFundacion: "1995-05-20",
     ultimaRenovacion: "2019-08-12",
   },
+];
+
+// Mock data for equipment that can be assigned to cuarteles
+const equipmentData = [
+  {
+    id: "eq1",
+    name: "Tractor John Deere",
+    type: "Maquinaria pesada",
+    status: "Disponible",
+    lastMaintenance: "2023-05-12"
+  },
+  {
+    id: "eq2",
+    name: "Sistema de riego automatizado",
+    type: "Infraestructura",
+    status: "En uso",
+    lastMaintenance: "2023-08-23"
+  },
+  {
+    id: "eq3",
+    name: "Cosechadora",
+    type: "Maquinaria pesada",
+    status: "Mantenimiento",
+    lastMaintenance: "2023-11-05"
+  },
+  {
+    id: "eq4",
+    name: "Dron de monitoreo",
+    type: "Tecnología",
+    status: "Disponible",
+    lastMaintenance: "2024-01-18"
+  },
+  {
+    id: "eq5",
+    name: "Sistema de fertilización",
+    type: "Infraestructura",
+    status: "En uso",
+    lastMaintenance: "2023-07-30"
+  }
+];
+
+// Equipment grid columns
+const equipmentColumns = [
+  {
+    id: "name",
+    header: "Nombre",
+    accessor: "name"
+  },
+  {
+    id: "type",
+    header: "Tipo",
+    accessor: "type"
+  },
+  {
+    id: "status",
+    header: "Estado",
+    accessor: "status"
+  },
+  {
+    id: "lastMaintenance",
+    header: "Último mantenimiento",
+    accessor: "lastMaintenance"
+  }
 ];
 
 // Render function for the estado column
@@ -314,6 +377,28 @@ const formSections: SectionConfig[] = [
       },
     ],
   },
+  {
+    id: "equipment-section",
+    title: "Equipamiento Asignado",
+    description: "Seleccione el equipamiento que desea asignar a este cuartel",
+    fields: [
+      {
+        id: "assignedEquipment",
+        type: "selectableGrid",
+        label: "Equipamiento Disponible",
+        name: "assignedEquipment",
+        required: false,
+        helperText: "Seleccione uno o más equipos para asignar al cuartel",
+        gridConfig: {
+          columns: equipmentColumns,
+          data: equipmentData,
+          multiSelect: true,
+          maxHeight: 300,
+          searchable: true
+        }
+      }
+    ]
+  }
 ];
 
 // Form validation schema
@@ -325,38 +410,38 @@ const formValidationSchema = z.object({
     .string()
     .min(1, { message: "Phenological State is required" }),
   state: z.boolean(),
+  assignedEquipment: z.array(z.any()).optional()
 });
 
 const Cuarteles = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
+  
   const handleAddCuartel = (data: any) => {
-    console.log("New cuartel data:", data);
-    // Here you would typically save the data to your backend
-    // For now, we'll just close the dialog
+    console.log("Nuevo cuartel:", data);
     setIsDialogOpen(false);
-    // You could also update the local data state to show the new record
-    alert("Nuevo cuartel agregado (check console for details)");
+    // Aquí iría la lógica para añadir el cuartel a la base de datos
   };
 
   return (
-    <div className="p-6 bg-background">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <Building2 className="h-6 w-6 mr-2" />
-          <h1 className="text-2xl font-bold">Cuarteles</h1>
-        </div>
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Cuarteles</h1>
         <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Agregar Cuartel
+          <Plus className="h-4 w-4 mr-2" />
+          Nuevo Cuartel
         </Button>
       </div>
+
+      {/* Grid using Zustand store - with gridId for the cuartel grid */}
       <Grid
         data={cuartelesData}
         columns={columns}
-        title="Listado de Cuarteles"
+        title="Cuarteles"
         expandableContent={expandableContent}
+        gridId="cuarteles" // Unique identifier for this grid
       />
 
+      {/* Dialog for adding a new cuartel */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>

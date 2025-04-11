@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Column, GridProvider, useGridContext } from "@/contexts/GridContext";
+import { Column, useGrid } from "@/lib/store/gridStore";
 import ColumnConfiguration from "./ColumnConfiguration";
 import ExportMenu from "./ExportMenu";
 import GroupingMenu from "./GroupingMenu";
@@ -26,6 +26,7 @@ interface GridProps {
   title?: string;
   onRowClick?: (row: any) => void;
   expandableContent?: (row: any) => React.ReactNode;
+  gridId: string; // New prop to identify which grid configuration to use
 }
 
 const GridComponent: React.FC<GridProps> = ({
@@ -35,22 +36,35 @@ const GridComponent: React.FC<GridProps> = ({
   title = "Data Grid",
   onRowClick,
   expandableContent,
+  gridId,
 }) => {
+  // Get grid state from Zustand
   const {
-    columns,
-    sortState,
-    groupState,
-    searchTerm,
+    grid,
+    initializeGrid,
     setSortState,
     setGroupState,
     setSearchTerm,
     toggleRowExpanded,
     isRowExpanded,
-  } = useGridContext();
+  } = useGrid(gridId);
+
+  // Initialize grid if not already initialized
+  useEffect(() => {
+    initializeGrid(initialColumns);
+  }, [initialColumns, initializeGrid]);
+
+  // Always define these, even when grid is null
+  const columns = grid?.columns || initialColumns;
+  const sortState = grid?.sortState || { column: null, direction: null };
+  const groupState = grid?.groupState || { column: null };
+  const searchTerm = grid?.searchTerm || "";
 
   // Filtrar datos basados en el término de búsqueda
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
+    
+    if (!columns) return data;
 
     return data.filter((row) => {
       return columns.some((column) => {
@@ -64,7 +78,7 @@ const GridComponent: React.FC<GridProps> = ({
 
   // Ordenar datos
   const sortedData = useMemo(() => {
-    if (!sortState.column || !sortState.direction) return filteredData;
+    if (!sortState?.column || !sortState?.direction) return filteredData;
 
     return [...filteredData].sort((a, b) => {
       const valueA = a[sortState.column as string];
@@ -87,7 +101,7 @@ const GridComponent: React.FC<GridProps> = ({
 
   // Agrupar datos
   const groupedData = useMemo(() => {
-    if (!groupState.column) return sortedData;
+    if (!groupState?.column) return sortedData;
 
     const groups: Record<string, any[]> = {};
 
@@ -105,23 +119,24 @@ const GridComponent: React.FC<GridProps> = ({
     return groups;
   }, [sortedData, groupState]);
 
+  // Early return if grid is not initialized yet
+  if (!grid) return <div>Loading...</div>;
+
   // Manejar clic en encabezado de columna para ordenar
   const handleSort = (columnId: string) => {
-    setSortState((prev) => {
-      if (prev.column === columnId) {
-        // Ciclo: asc -> desc -> null
-        if (prev.direction === "asc") {
-          return { column: columnId, direction: "desc" };
-        } else if (prev.direction === "desc") {
-          return { column: null, direction: null };
-        } else {
-          return { column: columnId, direction: "asc" };
-        }
+    if (sortState.column === columnId) {
+      // Ciclo: asc -> desc -> null
+      if (sortState.direction === "asc") {
+        setSortState({ column: columnId, direction: "desc" });
+      } else if (sortState.direction === "desc") {
+        setSortState({ column: null, direction: null });
       } else {
-        // Nueva columna, comenzar con asc
-        return { column: columnId, direction: "asc" };
+        setSortState({ column: columnId, direction: "asc" });
       }
-    });
+    } else {
+      // Nueva columna, comenzar con asc
+      setSortState({ column: columnId, direction: "asc" });
+    }
   };
 
   // Renderizar encabezados de columna
@@ -309,34 +324,50 @@ const GridComponent: React.FC<GridProps> = ({
     });
   };
 
+  // Render the toolbar
+  const renderToolbar = () => {
+    return (
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex gap-2 items-center">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <div className="flex items-center">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                className="w-[250px] h-9 pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <GroupingMenu columns={columns} gridId={gridId} />
+          <ExportMenu 
+            data={filteredData} 
+            columns={columns} 
+            filename={title.replace(/\s+/g, "-").toLowerCase()} 
+          />
+          <ColumnConfiguration columns={columns} gridId={gridId} />
+        </div>
+      </div>
+    );
+  };
+
+  // Return the Grid UI
   return (
     <div className="bg-background border rounded-lg shadow-sm">
-      <div className="p-4 border-b flex items-center justify-between">
-        <h2 className="text-xl font-bold">{title}</h2>
-        <div className="flex items-center space-x-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 h-9"
-            />
-          </div>
-          <ColumnConfiguration columns={columns} />
-          <ExportMenu
-            data={sortedData}
-            columns={columns}
-            filename={title.replace(/\s+/g, "-").toLowerCase()}
-          />
-          <GroupingMenu columns={columns} />
-        </div>
+      <div className="p-4 border-b">
+        {renderToolbar()}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr>
-              {expandableContent && <th className="w-10"></th>}
+              {expandableContent && (
+                <th className="px-4 py-2 w-10"></th>
+              )}
               {renderHeaders()}
             </tr>
           </thead>
@@ -345,31 +376,12 @@ const GridComponent: React.FC<GridProps> = ({
           </tbody>
         </table>
       </div>
-      <div className="p-4 border-t flex items-center justify-between text-sm text-muted-foreground">
-        <div>
-          {filteredData.length} {filteredData.length === 1 ? "item" : "items"}
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="icon" disabled>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span>Page 1 of 1</span>
-          <Button variant="outline" size="icon" disabled>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
     </div>
   );
 };
 
-// Componente contenedor que proporciona el contexto
 export const Grid: React.FC<GridProps> = (props) => {
-  return (
-    <GridProvider initialColumns={props.columns}>
-      <GridComponent {...props} />
-    </GridProvider>
-  );
+  return <GridComponent {...props} />;
 };
 
 export default Grid;
