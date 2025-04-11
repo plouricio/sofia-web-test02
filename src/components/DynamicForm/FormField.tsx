@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/form";
 import Grid from "@/components/Grid/Grid";
 import Captcha from "./Captcha";
+import SelectableGrid from "./SelectableGrid";
 
 interface FormFieldProps {
   field: FieldConfig;
@@ -458,6 +459,34 @@ const FormField: React.FC<FormFieldProps> = ({ field }) => {
                     </Command>
                   </PopoverContent>
                 </Popover>
+                {field.helperText && (
+                  <FormDescription>{field.helperText}</FormDescription>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        );
+
+      case "selectableGrid":
+        return (
+          <HookFormField
+            control={control}
+            name={field.name}
+            render={({ field: formField }) => (
+              <FormItem className="col-span-2">
+                <FormLabel>{field.label}</FormLabel>
+                <FormControl>
+                  <SelectableGrid
+                    columns={field.gridConfig?.columns || []}
+                    data={field.gridConfig?.data || []}
+                    value={formField.value || []}
+                    onChange={formField.onChange}
+                    multiSelect={field.gridConfig?.multiSelect !== false}
+                    maxHeight={field.gridConfig?.maxHeight || 300}
+                    searchable={field.gridConfig?.searchable !== false}
+                  />
+                </FormControl>
                 {field.helperText && (
                   <FormDescription>{field.helperText}</FormDescription>
                 )}

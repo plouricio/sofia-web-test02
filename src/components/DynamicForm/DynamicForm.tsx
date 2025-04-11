@@ -24,7 +24,8 @@ export type FieldType =
   | "url"
   | "search"
   | "autocomplete"
-  | "grid";
+  | "grid"
+  | "selectableGrid";
 
 export interface FieldOption {
   label: string;
@@ -84,7 +85,22 @@ const DynamicForm: React.FC<DynamicFormProps> = ({
   });
 
   const handleSubmit = formMethods.handleSubmit((data) => {
-    onSubmit(data);
+    // Process any selectableGrid data to ensure it's properly formatted
+    const processedData = { ...data };
+
+    // Loop through all sections to find selectableGrid fields
+    formSections.forEach((section) => {
+      section.fields.forEach((field) => {
+        if (field.type === "selectableGrid" && processedData[field.name]) {
+          // Ensure the data is an array (in case it was somehow converted)
+          if (!Array.isArray(processedData[field.name])) {
+            processedData[field.name] = [];
+          }
+        }
+      });
+    });
+
+    onSubmit(processedData);
   });
 
   const handleReset = () => {

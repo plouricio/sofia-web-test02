@@ -50,6 +50,7 @@ const fieldTypeOptions = [
   { label: "Search", value: "search" },
   { label: "Autocomplete", value: "autocomplete" },
   { label: "Grid", value: "grid" },
+  { label: "Selectable Grid", value: "selectableGrid" },
 ];
 
 interface DraggableSectionProps {
@@ -255,6 +256,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
   const [fieldRequired, setFieldRequired] = useState(false);
   const [fieldHelperText, setFieldHelperText] = useState("");
   const [fieldOptions, setFieldOptions] = useState<string>(""); // JSON string of options
+  const [fieldGridConfig, setFieldGridConfig] = useState<string>(""); // JSON string of grid configuration
 
   // Handle section changes
   const handleAddSection = () => {
@@ -365,6 +367,12 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
       setFieldOptions("");
     }
 
+    if (field.gridConfig) {
+      setFieldGridConfig(JSON.stringify(field.gridConfig));
+    } else {
+      setFieldGridConfig("");
+    }
+
     setEditingFieldInfo({ sectionIndex, fieldIndex });
   };
 
@@ -385,6 +393,16 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
       parsedOptions = undefined;
     }
 
+    let parsedGridConfig;
+    try {
+      parsedGridConfig =
+        fieldGridConfig && ["grid", "selectableGrid"].includes(fieldType)
+          ? JSON.parse(fieldGridConfig)
+          : undefined;
+    } catch (e) {
+      parsedGridConfig = undefined;
+    }
+
     const newField: FieldConfig = {
       id: fieldId || `field-${Date.now()}`,
       type: fieldType,
@@ -394,6 +412,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
       required: fieldRequired,
       helperText: fieldHelperText || undefined,
       options: parsedOptions,
+      gridConfig: parsedGridConfig,
     };
 
     if (fieldIndex !== null) {
@@ -447,6 +466,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
     setFieldRequired(false);
     setFieldHelperText("");
     setFieldOptions("");
+    setFieldGridConfig("");
   };
 
   return (
@@ -632,6 +652,38 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
                     <p className="text-xs text-muted-foreground">
                       Enter options as a JSON array of objects with label and
                       value properties.
+                    </p>
+                  </div>
+                )}
+
+                {["grid", "selectableGrid"].includes(fieldType) && (
+                  <div className="space-y-2">
+                    <Label htmlFor="field-grid-config">
+                      Grid Configuration
+                    </Label>
+                    <Textarea
+                      id="field-grid-config"
+                      value={fieldGridConfig}
+                      onChange={(e) => setFieldGridConfig(e.target.value)}
+                      placeholder={`{
+  "columns": [
+    {"id": "id", "header": "ID", "accessor": "id"},
+    {"id": "name", "header": "Name", "accessor": "name"}
+  ],
+  "data": [
+    {"id": "1", "name": "Item 1"},
+    {"id": "2", "name": "Item 2"}
+  ],
+  "multiSelect": true,
+  "searchable": true,
+  "maxHeight": 300
+}`}
+                      rows={10}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {fieldType === "selectableGrid"
+                        ? "Configure the selectable grid with columns, data, and options for multiSelect, searchable, and maxHeight."
+                        : "Configure the grid with columns, data, and any additional display options."}
                     </p>
                   </div>
                 )}
