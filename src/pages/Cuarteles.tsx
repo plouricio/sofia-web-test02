@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Grid } from "@/components/Grid/Grid";
 import {
   Building2,
@@ -6,6 +6,8 @@ import {
   XCircle,
   AlertTriangle,
   Plus,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { Column } from "@/lib/store/gridStore";
 import { Button } from "@/components/ui/button";
@@ -21,145 +23,14 @@ import DynamicForm, {
   SectionConfig,
 } from "@/components/DynamicForm/DynamicForm";
 import { z } from "zod";
+import { Cuartel } from "@/types/cuartel";
+import cuartelService from "@/_services/cuartelService";
+import { toast } from "@/components/ui/use-toast";
 
-// Mock data for cuarteles
-const cuartelesData = [
-  {
-    id: 1,
-    nombre: "Cuartel Central",
-    ubicacion: "Ciudad Capital",
-    capacidad: 250,
-    comandante: "Cnel. Martínez",
-    estado: "Activo",
-    personal: 210,
-    vehiculos: 45,
-    fechaFundacion: "1985-06-12",
-    ultimaRenovacion: "2019-03-15",
-  },
-  {
-    id: 2,
-    nombre: "Cuartel Norte",
-    ubicacion: "Provincia Norte",
-    capacidad: 180,
-    comandante: "Tcnel. Rodríguez",
-    estado: "Activo",
-    personal: 165,
-    vehiculos: 32,
-    fechaFundacion: "1992-11-05",
-    ultimaRenovacion: "2020-07-22",
-  },
-  {
-    id: 3,
-    nombre: "Cuartel Sur",
-    ubicacion: "Provincia Sur",
-    capacidad: 120,
-    comandante: "Mayor Sánchez",
-    estado: "En renovación",
-    personal: 85,
-    vehiculos: 18,
-    fechaFundacion: "1998-04-30",
-    ultimaRenovacion: "2018-09-10",
-  },
-  {
-    id: 4,
-    nombre: "Cuartel Este",
-    ubicacion: "Provincia Este",
-    capacidad: 150,
-    comandante: "Tcnel. Gómez",
-    estado: "Activo",
-    personal: 142,
-    vehiculos: 28,
-    fechaFundacion: "1990-02-18",
-    ultimaRenovacion: "2021-05-03",
-  },
-  {
-    id: 5,
-    nombre: "Cuartel Oeste",
-    ubicacion: "Provincia Oeste",
-    capacidad: 200,
-    comandante: "Cnel. Pérez",
-    estado: "Inactivo",
-    personal: 0,
-    vehiculos: 5,
-    fechaFundacion: "1988-09-25",
-    ultimaRenovacion: "2017-11-30",
-  },
-  {
-    id: 6,
-    nombre: "Base Montaña",
-    ubicacion: "Cordillera Central",
-    capacidad: 90,
-    comandante: "Cap. Díaz",
-    estado: "Activo",
-    personal: 82,
-    vehiculos: 15,
-    fechaFundacion: "2005-12-07",
-    ultimaRenovacion: "2022-01-15",
-  },
-  {
-    id: 7,
-    nombre: "Base Costera",
-    ubicacion: "Costa Atlántica",
-    capacidad: 110,
-    comandante: "Mayor López",
-    estado: "Activo",
-    personal: 98,
-    vehiculos: 22,
-    fechaFundacion: "2001-08-14",
-    ultimaRenovacion: "2021-10-05",
-  },
-  {
-    id: 8,
-    nombre: "Cuartel Frontera",
-    ubicacion: "Zona Fronteriza",
-    capacidad: 160,
-    comandante: "Tcnel. Ramírez",
-    estado: "En renovación",
-    personal: 120,
-    vehiculos: 25,
-    fechaFundacion: "1995-05-20",
-    ultimaRenovacion: "2019-08-12",
-  },
-];
+// Mock data for cuarteles that matches the API structure
 
 // Mock data for equipment that can be assigned to cuarteles
-const equipmentData = [
-  {
-    id: "eq1",
-    name: "Tractor John Deere",
-    type: "Maquinaria pesada",
-    status: "Disponible",
-    lastMaintenance: "2023-05-12"
-  },
-  {
-    id: "eq2",
-    name: "Sistema de riego automatizado",
-    type: "Infraestructura",
-    status: "En uso",
-    lastMaintenance: "2023-08-23"
-  },
-  {
-    id: "eq3",
-    name: "Cosechadora",
-    type: "Maquinaria pesada",
-    status: "Mantenimiento",
-    lastMaintenance: "2023-11-05"
-  },
-  {
-    id: "eq4",
-    name: "Dron de monitoreo",
-    type: "Tecnología",
-    status: "Disponible",
-    lastMaintenance: "2024-01-18"
-  },
-  {
-    id: "eq5",
-    name: "Sistema de fertilización",
-    type: "Infraestructura",
-    status: "En uso",
-    lastMaintenance: "2023-07-30"
-  }
-];
+
 
 // Equipment grid columns
 const equipmentColumns = [
@@ -185,151 +56,98 @@ const equipmentColumns = [
   }
 ];
 
-// Render function for the estado column
-const renderEstado = (value: string) => {
-  switch (value) {
-    case "Activo":
-      return (
-        <div className="flex items-center">
-          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-          <span>Activo</span>
-        </div>
-      );
-    case "Inactivo":
-      return (
-        <div className="flex items-center">
-          <XCircle className="h-4 w-4 text-red-500 mr-2" />
-          <span>Inactivo</span>
-        </div>
-      );
-    case "En renovación":
-      return (
-        <div className="flex items-center">
-          <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
-          <span>En renovación</span>
-        </div>
-      );
-    default:
-      return value;
-  }
+// Render function for the state column (boolean)
+const renderState = (value: boolean) => {
+  return value ? (
+    <div className="flex items-center">
+      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+      <span>Activo</span>
+    </div>
+  ) : (
+    <div className="flex items-center">
+      <XCircle className="h-4 w-4 text-red-500 mr-2" />
+      <span>Inactivo</span>
+    </div>
+  );
 };
 
-// Column configuration for the grid
+// Column configuration for the grid - updated to match the API structure
 const columns: Column[] = [
   {
     id: "id",
     header: "ID",
-    accessor: "id",
+    accessor: "_id",
     visible: true,
     sortable: true,
   },
   {
-    id: "nombre",
+    id: "barracks",
     header: "Nombre",
-    accessor: "nombre",
+    accessor: "barracks",
     visible: true,
     sortable: true,
     groupable: true,
   },
   {
-    id: "ubicacion",
-    header: "Ubicación",
-    accessor: "ubicacion",
+    id: "species",
+    header: "Especie",
+    accessor: "species",
     visible: true,
     sortable: true,
     groupable: true,
   },
   {
-    id: "capacidad",
-    header: "Capacidad",
-    accessor: "capacidad",
+    id: "variety",
+    header: "Variedad",
+    accessor: "variety",
+    visible: true,
+    sortable: true,
+    groupable: true,
+  },
+  {
+    id: "phenologicalState",
+    header: "Estado Fenológico",
+    accessor: "phenologicalState",
     visible: true,
     sortable: true,
   },
   {
-    id: "comandante",
-    header: "Comandante",
-    accessor: "comandante",
-    visible: true,
-    sortable: true,
-  },
-  {
-    id: "estado",
+    id: "state",
     header: "Estado",
-    accessor: "estado",
+    accessor: "state",
     visible: true,
     sortable: true,
     groupable: true,
-    render: renderEstado,
-  },
-  {
-    id: "personal",
-    header: "Personal",
-    accessor: "personal",
-    visible: true,
-    sortable: true,
-  },
-  {
-    id: "vehiculos",
-    header: "Vehículos",
-    accessor: "vehiculos",
-    visible: true,
-    sortable: true,
-  },
-  {
-    id: "fechaFundacion",
-    header: "Fecha Fundación",
-    accessor: "fechaFundacion",
-    visible: true,
-    sortable: true,
-  },
-  {
-    id: "ultimaRenovacion",
-    header: "Última Renovación",
-    accessor: "ultimaRenovacion",
-    visible: true,
-    sortable: true,
-  },
+    render: renderState,
+  }
 ];
 
-// Expandable content for each row
+// Expandable content for each row - updated for new structure
 const expandableContent = (row: any) => (
   <div className="p-4">
-    <h3 className="text-lg font-semibold mb-2">{row.nombre}</h3>
+    <h3 className="text-lg font-semibold mb-2">{row.barracks}</h3>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <p>
-          <strong>Ubicación:</strong> {row.ubicacion}
+          <strong>Especie:</strong> {row.species}
         </p>
         <p>
-          <strong>Capacidad:</strong> {row.capacidad} personas
-        </p>
-        <p>
-          <strong>Comandante:</strong> {row.comandante}
-        </p>
-        <p>
-          <strong>Estado:</strong> {row.estado}
+          <strong>Variedad:</strong> {row.variety}
         </p>
       </div>
       <div>
         <p>
-          <strong>Personal actual:</strong> {row.personal} personas
+          <strong>Estado Fenológico:</strong> {row.phenologicalState}
         </p>
         <p>
-          <strong>Vehículos:</strong> {row.vehiculos} unidades
-        </p>
-        <p>
-          <strong>Fecha de fundación:</strong> {row.fechaFundacion}
-        </p>
-        <p>
-          <strong>Última renovación:</strong> {row.ultimaRenovacion}
+          <strong>Estado:</strong> {row.state ? "Activo" : "Inactivo"}
         </p>
       </div>
     </div>
   </div>
 );
 
-// Form configuration for adding new cuartel
+// Form configuration for adding new cuartel - matches exactly the model structure
 const formSections: SectionConfig[] = [
   {
     id: "cuartel-info",
@@ -339,124 +157,280 @@ const formSections: SectionConfig[] = [
       {
         id: "barracks",
         type: "text",
-        label: "Barracks",
+        label: "Nombre del Cuartel",
         name: "barracks",
         placeholder: "Nombre del cuartel",
         required: true,
+        helperText: "Ingrese el nombre identificativo del cuartel"
       },
       {
         id: "species",
         type: "text",
-        label: "Species",
+        label: "Especie",
         name: "species",
-        placeholder: "Especie",
+        placeholder: "Ej: Manzana, Pera, Uva",
         required: true,
+        helperText: "Especie principal cultivada en este cuartel"
       },
       {
         id: "variety",
         type: "text",
-        label: "Variety",
+        label: "Variedad",
         name: "variety",
-        placeholder: "Variedad",
+        placeholder: "Ej: Fuji, Bartlett, Cabernet",
         required: true,
+        helperText: "Variedad específica de la especie"
       },
       {
         id: "phenologicalState",
         type: "text",
-        label: "Phenological State",
+        label: "Estado Fenológico",
         name: "phenologicalState",
-        placeholder: "Estado fenológico",
+        placeholder: "Ej: Floración, Maduración, Cosecha",
         required: true,
+        helperText: "Estado actual de desarrollo de la planta"
       },
       {
         id: "state",
         type: "checkbox",
-        label: "State",
+        label: "Activo",
         name: "state",
         required: true,
+        helperText: "Indica si el cuartel está actualmente en uso"
       },
     ],
-  },
-  {
-    id: "equipment-section",
-    title: "Equipamiento Asignado",
-    description: "Seleccione el equipamiento que desea asignar a este cuartel",
-    fields: [
-      {
-        id: "assignedEquipment",
-        type: "selectableGrid",
-        label: "Equipamiento Disponible",
-        name: "assignedEquipment",
-        required: false,
-        helperText: "Seleccione uno o más equipos para asignar al cuartel",
-        gridConfig: {
-          columns: equipmentColumns,
-          data: equipmentData,
-          multiSelect: true,
-          maxHeight: 300,
-          searchable: true
-        }
-      }
-    ]
   }
 ];
 
-// Form validation schema
+// Form validation schema - matches exactly the model requirements
 const formValidationSchema = z.object({
-  barracks: z.string().min(1, { message: "Barracks is required" }),
-  species: z.string().min(1, { message: "Species is required" }),
-  variety: z.string().min(1, { message: "Variety is required" }),
-  phenologicalState: z
-    .string()
-    .min(1, { message: "Phenological State is required" }),
-  state: z.boolean(),
-  assignedEquipment: z.array(z.any()).optional()
+  barracks: z.string().min(1, { message: "El nombre del cuartel es obligatorio" }),
+  species: z.string().min(1, { message: "La especie es obligatoria" }),
+  variety: z.string().min(1, { message: "La variedad es obligatoria" }),
+  phenologicalState: z.string().min(1, { message: "El estado fenológico es obligatorio" }),
+  state: z.boolean().default(false)
 });
 
 const Cuarteles = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [cuarteles, setCuarteles] = useState<Cuartel[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedCuartel, setSelectedCuartel] = useState<Cuartel | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   
-  const handleAddCuartel = (data: any) => {
-    console.log("Nuevo cuartel:", data);
-    setIsDialogOpen(false);
-    // Aquí iría la lógica para añadir el cuartel a la base de datos
+  // Fetch cuarteles on component mount
+  useEffect(() => {
+    fetchCuarteles();
+  }, []);
+  
+  // Function to fetch cuarteles data
+  const fetchCuarteles = async () => {
+    setIsLoading(true);
+    try {
+      const data = await cuartelService.findAll();
+      setCuarteles(data.data);
+    } catch (error) {
+      console.error("Error loading cuarteles:", error);
+      // Use mock data in case of API failure
+      // setCuarteles(cuartelesData);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Function to handle adding a new cuartel
+  const handleAddCuartel = async (data: Partial<Cuartel>) => {
+    try {
+      // Preparar datos según la estructura exacta del modelo
+      const cuartelData: Partial<Cuartel> = {
+        barracks: data.barracks,
+        species: data.species,
+        variety: data.variety, 
+        phenologicalState: data.phenologicalState,
+        state: data.state !== undefined ? data.state : false
+      };
+      
+      const newCuartel = await cuartelService.createCuartel(cuartelData);
+      setCuarteles((prevCuarteles) => [...prevCuarteles, newCuartel]);
+      setIsDialogOpen(false);
+      toast({
+        title: "Cuartel creado",
+        description: `El cuartel ${newCuartel.barracks} ha sido creado exitosamente.`,
+      });
+    } catch (error) {
+      console.error("Error creating cuartel:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear el cuartel. Por favor intente nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to handle updating an existing cuartel
+  const handleUpdateCuartel = async (id: string | number, data: Partial<Cuartel>) => {
+    try {
+      console.log("updatecuartel", data);
+      // Preparar datos según la estructura exacta del modelo
+      const cuartelData: Partial<Cuartel> = {
+        barracks: data.barracks,
+        species: data.species,
+        variety: data.variety,
+        phenologicalState: data.phenologicalState,
+        state: data.state !== undefined ? data.state : false
+      };
+      
+      const updatedCuartel = await cuartelService.updateCuartel(id, cuartelData);
+      // setCuarteles((prevCuarteles) => 
+      //   prevCuarteles.map((cuartel) => 
+      //     cuartel._id === id ? updatedCuartel : cuartel
+      //   )
+      // );
+      await fetchCuarteles();
+      setIsDialogOpen(false);
+      setIsEditMode(false);
+      setSelectedCuartel(null);
+      toast({
+        title: "Cuartel actualizado",
+        description: `El cuartel ${cuartelData.barracks} ha sido actualizado exitosamente.`,
+      });
+    } catch (error) {
+      console.error("Error updating cuartel:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el cuartel. Por favor intente nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to handle deleting a cuartel
+  const handleDeleteCuartel = async (id: string | number) => {
+    try {
+      await cuartelService.softDeleteCuartel(id);
+      setCuarteles((prevCuarteles) => prevCuarteles.filter((cuartel) => cuartel._id !== id));
+      toast({
+        title: "Cuartel eliminado",
+        description: "El cuartel ha sido eliminado exitosamente.",
+      });
+    } catch (error) {
+      console.error("Error deleting cuartel:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el cuartel. Por favor intente nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle form submission based on mode (create or edit)
+  const handleFormSubmit = (data: Partial<Cuartel>) => {
+    if (isEditMode && selectedCuartel && selectedCuartel._id) {
+      console.log("handleFormSubmit updatecuartel", data);
+      handleUpdateCuartel(selectedCuartel._id, data);
+    } else {
+      console.log("handleFormSubmit addcuartel", data);
+      handleAddCuartel(data);
+    }
+  };
+
+  // Function to handle edit button click
+  const handleEditClick = (cuartel: Cuartel) => {
+    setSelectedCuartel(cuartel);
+    setIsEditMode(true);
+    setIsDialogOpen(true);
+  };
+
+  // Render action buttons for each row
+  const renderActions = (row: Cuartel) => {
+    return (
+      <div className="flex space-x-2">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={(e) => {
+            e.stopPropagation();
+            handleEditClick(row);
+          }}
+          title="Editar"
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={(e) => {
+            e.stopPropagation();
+            if (row._id) {
+              handleDeleteCuartel(row._id);
+            }
+          }}
+          title="Eliminar"
+          className="text-red-500 hover:bg-red-50 hover:text-red-600"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    );
   };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Cuarteles</h1>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => {
+          setSelectedCuartel(null);
+          setIsEditMode(false);
+          setIsDialogOpen(true);
+        }}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Cuartel
         </Button>
       </div>
 
-      {/* Grid using Zustand store - with gridId for the cuartel grid */}
-      <Grid
-        data={cuartelesData}
-        columns={columns}
-        title="Cuarteles"
-        expandableContent={expandableContent}
-        gridId="cuarteles" // Unique identifier for this grid
-      />
+      {/* Grid using Zustand store with actual cuarteles data or loading state */}
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <p>Cargando cuarteles...</p>
+        </div>
+      ) : (
+        <Grid
+          data={cuarteles}
+          columns={columns}
+          title="Cuarteles"
+          // expandableContent={expandableContent}
+          gridId="cuarteles"
+          actions={renderActions}
+        />
+      )}
 
-      {/* Dialog for adding a new cuartel */}
+      {/* Dialog for adding or editing a cuartel */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Agregar Nuevo Cuartel</DialogTitle>
+            <DialogTitle>{isEditMode ? "Editar Cuartel" : "Añadir Nuevo Cuartel"}</DialogTitle>
             <DialogDescription>
-              Complete el formulario para agregar un nuevo cuartel al sistema.
+              {isEditMode 
+                ? "Modifique el formulario para actualizar el cuartel." 
+                : "Complete el formulario para añadir un nuevo cuartel al sistema."
+              }
             </DialogDescription>
           </DialogHeader>
           <DynamicForm
             sections={formSections}
-            onSubmit={handleAddCuartel}
+            onSubmit={handleFormSubmit}
             validationSchema={formValidationSchema}
-            defaultValues={{
-              state: false,
-            }}
+            defaultValues={
+              isEditMode && selectedCuartel 
+                ? {
+                    barracks: selectedCuartel.barracks,
+                    species: selectedCuartel.species,
+                    variety: selectedCuartel.variety,
+                    phenologicalState: selectedCuartel.phenologicalState,
+                    state: selectedCuartel.state,
+                  }
+                : { state: false }
+            }
           />
         </DialogContent>
       </Dialog>

@@ -27,6 +27,7 @@ interface GridProps {
   onRowClick?: (row: any) => void;
   expandableContent?: (row: any) => React.ReactNode;
   gridId: string; // New prop to identify which grid configuration to use
+  actions?: (row: any) => React.ReactNode; // New prop for action buttons
 }
 
 const GridComponent: React.FC<GridProps> = ({
@@ -37,6 +38,7 @@ const GridComponent: React.FC<GridProps> = ({
   onRowClick,
   expandableContent,
   gridId,
+  actions,
 }) => {
   // Get grid state from Zustand
   const {
@@ -182,15 +184,17 @@ const GridComponent: React.FC<GridProps> = ({
 
   // Renderizar filas normales (sin agrupar)
   const renderRows = () => {
+    console.log(sortedData);
     if (groupState.column) return null;
 
-    return sortedData.map((row) => {
-      const rowId = row[idField];
+    return sortedData.map((row, index) => {
+      const rowId = row[idField] || `row-${index}`;
       const isExpanded = isRowExpanded(rowId);
 
       return (
-        <React.Fragment key={rowId}>
+        <React.Fragment key={`row-${rowId}`}>
           <tr
+            key={`tr-${rowId}`}
             className={`hover:bg-muted/50 ${onRowClick ? "cursor-pointer" : ""}`}
             onClick={() => onRowClick && onRowClick(row)}
           >
@@ -213,13 +217,21 @@ const GridComponent: React.FC<GridProps> = ({
               </td>
             )}
             {renderCells(row)}
+            {actions && (
+              <td className="px-4 py-2 border-t">
+                <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                  {actions(row)}
+                </div>
+              </td>
+            )}
           </tr>
           {expandableContent && isExpanded && (
-            <tr>
+            <tr key={`expanded-${rowId}`}>
               <td
                 colSpan={
                   columns.filter((col) => col.visible).length +
-                  (expandableContent ? 1 : 0)
+                  (expandableContent ? 1 : 0) +
+                  (actions ? 1 : 0)
                 }
                 className="bg-muted/20 p-4"
               >
@@ -236,17 +248,18 @@ const GridComponent: React.FC<GridProps> = ({
   const renderGroupedRows = () => {
     if (!groupState.column) return null;
 
-    return Object.entries(groupedData).map(([groupName, rows]) => {
-      const groupId = `group-${groupName}`;
+    return Object.entries(groupedData).map(([groupName, rows], groupIndex) => {
+      const groupId = `group-${groupName}-${groupIndex}`;
       const isExpanded = isRowExpanded(groupId);
 
       return (
         <React.Fragment key={groupId}>
-          <tr className="bg-muted/30">
+          <tr key={`group-tr-${groupId}`} className="bg-muted/30">
             <td
               colSpan={
                 columns.filter((col) => col.visible).length +
-                (expandableContent ? 1 : 0)
+                (expandableContent ? 1 : 0) +
+                (actions ? 1 : 0)
               }
               className="px-4 py-2 font-medium"
             >
@@ -272,53 +285,65 @@ const GridComponent: React.FC<GridProps> = ({
               </div>
             </td>
           </tr>
-          {isExpanded &&
-            rows.map((row) => {
-              const rowId = row[idField];
-              const rowExpanded = isRowExpanded(rowId);
+          {isExpanded && (
+            <>
+              {rows.map((row, rowIndex) => {
+                const rowId = row[idField] || `row-in-group-${groupIndex}-${rowIndex}`;
+                const rowExpanded = isRowExpanded(rowId);
 
-              return (
-                <React.Fragment key={rowId}>
-                  <tr
-                    className={`hover:bg-muted/50 ${onRowClick ? "cursor-pointer" : ""}`}
-                    onClick={() => onRowClick && onRowClick(row)}
-                  >
-                    {expandableContent && (
-                      <td className="px-4 py-2 border-t w-10">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleRowExpanded(rowId);
-                          }}
-                        >
-                          {rowExpanded ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </td>
-                    )}
-                    {renderCells(row)}
-                  </tr>
-                  {expandableContent && rowExpanded && (
-                    <tr>
-                      <td
-                        colSpan={
-                          columns.filter((col) => col.visible).length +
-                          (expandableContent ? 1 : 0)
-                        }
-                        className="bg-muted/20 p-4"
-                      >
-                        {expandableContent(row)}
-                      </td>
+                return (
+                  <React.Fragment key={`row-${rowId}`}>
+                    <tr
+                      key={`tr-${rowId}`}
+                      className={`hover:bg-muted/50 ${onRowClick ? "cursor-pointer" : ""}`}
+                      onClick={() => onRowClick && onRowClick(row)}
+                    >
+                      {expandableContent && (
+                        <td className="px-4 py-2 border-t w-10">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRowExpanded(rowId);
+                            }}
+                          >
+                            {rowExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </td>
+                      )}
+                      {renderCells(row)}
+                      {actions && (
+                        <td className="px-4 py-2 border-t">
+                          <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                            {actions(row)}
+                          </div>
+                        </td>
+                      )}
                     </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
+                    {expandableContent && rowExpanded && (
+                      <tr key={`expanded-${rowId}`}>
+                        <td
+                          colSpan={
+                            columns.filter((col) => col.visible).length +
+                            (expandableContent ? 1 : 0) +
+                            (actions ? 1 : 0)
+                          }
+                          className="bg-muted/20 p-4"
+                        >
+                          {expandableContent(row)}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </>
+          )}
         </React.Fragment>
       );
     });
@@ -366,9 +391,12 @@ const GridComponent: React.FC<GridProps> = ({
           <thead>
             <tr>
               {expandableContent && (
-                <th className="px-4 py-2 w-10"></th>
+                <th key="expand-column" className="px-4 py-2 w-10"></th>
               )}
               {renderHeaders()}
+              {actions && (
+                <th key="actions-column" className="px-4 py-2 w-24">Acciones</th>
+              )}
             </tr>
           </thead>
           <tbody>

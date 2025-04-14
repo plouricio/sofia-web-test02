@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
@@ -16,11 +15,12 @@ import {
   LayoutDashboard,
   Settings,
   Users,
-  LogOut,
   BarChart3,
   FileText,
   Building2,
 } from "lucide-react";
+import UserMenu from "./UserMenu";
+import { useAuthStore } from "@/lib/store/authStore";
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -31,11 +31,13 @@ interface NavItem {
   icon: React.ReactNode;
   label: string;
   path: string;
+  requiredRole?: 'admin' | 'manager' | 'user';
 }
 
 const Sidebar = ({ collapsed = false, onToggle = () => {} }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(collapsed);
   const location = useLocation();
+  const { user } = useAuthStore();
 
   const handleToggle = () => {
     setIsCollapsed(!isCollapsed);
@@ -43,28 +45,65 @@ const Sidebar = ({ collapsed = false, onToggle = () => {} }: SidebarProps) => {
   };
 
   const navItems: NavItem[] = [
-    { icon: <Home size={20} />, label: "Home", path: "/" },
+    { icon: <Home size={20} />, label: "Inicio", path: "/" },
     {
       icon: <LayoutDashboard size={20} />,
       label: "Dashboard",
       path: "/dashboard",
+      requiredRole: 'manager'
     },
-    { icon: <BarChart3 size={20} />, label: "Analytics", path: "/analytics" },
-    { icon: <Users size={20} />, label: "Users", path: "/users" },
+    { 
+      icon: <BarChart3 size={20} />, 
+      label: "Estadísticas", 
+      path: "/analytics",
+      requiredRole: 'manager'
+    },
+    { 
+      icon: <Users size={20} />, 
+      label: "Usuarios", 
+      path: "/users",
+      requiredRole: 'admin'
+    },
     { icon: <Building2 size={20} />, label: "Cuarteles", path: "/cuarteles" },
     {
       icon: <FileText size={20} />,
-      label: "Dynamic Form",
+      label: "Formulario Dinámico",
       path: "/dynamic-form",
     },
     {
       icon: <FileText size={20} />,
-      label: "Form Builder",
+      label: "Constructor de Formularios",
       path: "/form-builder",
+      requiredRole: 'admin'
     },
-    { icon: <FileText size={20} />, label: "Reports", path: "/reports" },
-    { icon: <Settings size={20} />, label: "Settings", path: "/settings" },
+    { 
+      icon: <FileText size={20} />, 
+      label: "Reportes", 
+      path: "/reports",
+      requiredRole: 'manager'
+    },
+    { 
+      icon: <Settings size={20} />, 
+      label: "Configuración", 
+      path: "/settings",
+      requiredRole: 'admin'
+    },
   ];
+
+  // Filter nav items based on user role
+  const filteredNavItems = navItems.filter(item => {
+    if (!item.requiredRole) return true;
+    if (!user) return false;
+    
+    // Admin can access everything
+    if (user.role === 'admin') return true;
+    
+    // Manager can access user and manager items
+    if (user.role === 'manager' && item.requiredRole !== 'admin') return true;
+    
+    // Regular user can only access user items
+    return user.role === item.requiredRole;
+  });
 
   return (
     <div
@@ -72,7 +111,7 @@ const Sidebar = ({ collapsed = false, onToggle = () => {} }: SidebarProps) => {
     >
       {/* Logo and collapse button */}
       <div className="p-4 flex items-center justify-between">
-        {!isCollapsed && <div className="font-bold text-xl">AppName</div>}
+        {!isCollapsed && <div className="font-bold text-xl">Sofia App</div>}
         <Button
           variant="ghost"
           size="icon"
@@ -88,7 +127,7 @@ const Sidebar = ({ collapsed = false, onToggle = () => {} }: SidebarProps) => {
       {/* Navigation Links */}
       <nav className="flex-1 py-4 overflow-y-auto">
         <ul className="space-y-2 px-2">
-          {navItems.map((item, index) => {
+          {filteredNavItems.map((item, index) => {
             const isActive = location.pathname === item.path;
             return (
               <li key={index}>
@@ -118,69 +157,9 @@ const Sidebar = ({ collapsed = false, onToggle = () => {} }: SidebarProps) => {
 
       <Separator />
 
-      {/* User Profile Section */}
-      <div className="p-4">
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                className={`flex items-center ${isCollapsed ? "justify-center" : "space-x-3"}`}
-              >
-                <Avatar>
-                  <AvatarImage
-                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=user123"
-                    alt="User"
-                  />
-                  <AvatarFallback>US</AvatarFallback>
-                </Avatar>
-                {!isCollapsed && (
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">User Name</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      user@example.com
-                    </p>
-                  </div>
-                )}
-              </div>
-            </TooltipTrigger>
-            {isCollapsed && (
-              <TooltipContent side="right" className="flex flex-col">
-                <span className="font-medium">User Name</span>
-                <span className="text-xs text-muted-foreground">
-                  user@example.com
-                </span>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-
-        {!isCollapsed && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full mt-3 justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-          >
-            <LogOut size={16} className="mr-2" />
-            Logout
-          </Button>
-        )}
-
-        {isCollapsed && (
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-full mt-3 text-red-500 hover:text-red-600 hover:bg-red-50"
-                >
-                  <LogOut size={16} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Logout</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+      {/* User Menu Section */}
+      <div className="p-4 flex justify-center">
+        <UserMenu />
       </div>
     </div>
   );
