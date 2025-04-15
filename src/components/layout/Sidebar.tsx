@@ -65,6 +65,7 @@ const Sidebar = ({ collapsed = false, onToggle = () => {} }: SidebarProps) => {
       requiredRole: 'admin'
     },
     { icon: <Building2 size={20} />, label: "Cuarteles", path: "/cuarteles" },
+    { icon: <Building2 size={20} />, label: "Lista Cuarteles", path: "/lista-cuarteles" },
     {
       icon: <FileText size={20} />,
       label: "Formulario Dinámico",
